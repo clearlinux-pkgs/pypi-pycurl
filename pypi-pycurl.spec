@@ -4,12 +4,14 @@
 #
 Name     : pypi-pycurl
 Version  : 7.45.1
-Release  : 85
+Release  : 86
 URL      : https://files.pythonhosted.org/packages/09/ca/0b6da1d0f391acb8991ac6fdf8823ed9cf4c19680d4f378ab1727f90bd5c/pycurl-7.45.1.tar.gz
 Source0  : https://files.pythonhosted.org/packages/09/ca/0b6da1d0f391acb8991ac6fdf8823ed9cf4c19680d4f378ab1727f90bd5c/pycurl-7.45.1.tar.gz
 Summary  : PycURL -- A Python Interface To The cURL library
 Group    : Development/Tools
-License  : LGPL-2.1
+License  : LGPL-2.1 MIT
+Requires: pypi-pycurl-filemap = %{version}-%{release}
+Requires: pypi-pycurl-lib = %{version}-%{release}
 Requires: pypi-pycurl-license = %{version}-%{release}
 Requires: pypi-pycurl-python = %{version}-%{release}
 Requires: pypi-pycurl-python3 = %{version}-%{release}
@@ -33,6 +35,24 @@ Group: Documentation
 doc components for the pypi-pycurl package.
 
 
+%package filemap
+Summary: filemap components for the pypi-pycurl package.
+Group: Default
+
+%description filemap
+filemap components for the pypi-pycurl package.
+
+
+%package lib
+Summary: lib components for the pypi-pycurl package.
+Group: Libraries
+Requires: pypi-pycurl-license = %{version}-%{release}
+Requires: pypi-pycurl-filemap = %{version}-%{release}
+
+%description lib
+lib components for the pypi-pycurl package.
+
+
 %package license
 Summary: license components for the pypi-pycurl package.
 Group: Default
@@ -53,6 +73,7 @@ python components for the pypi-pycurl package.
 %package python3
 Summary: python3 components for the pypi-pycurl package.
 Group: Default
+Requires: pypi-pycurl-filemap = %{version}-%{release}
 Requires: python3-core
 Provides: pypi(pycurl)
 
@@ -63,13 +84,16 @@ python3 components for the pypi-pycurl package.
 %prep
 %setup -q -n pycurl-7.45.1
 cd %{_builddir}/pycurl-7.45.1
+pushd ..
+cp -a pycurl-7.45.1 buildavx2
+popd
 
 %build
 export http_proxy=http://127.0.0.1:9/
 export https_proxy=http://127.0.0.1:9/
 export no_proxy=localhost,127.0.0.1,0.0.0.0
 export LANG=C.UTF-8
-export SOURCE_DATE_EPOCH=1647272217
+export SOURCE_DATE_EPOCH=1656385242
 export GCC_IGNORE_WERROR=1
 export CFLAGS="$CFLAGS -fno-lto "
 export FCFLAGS="$FFLAGS -fno-lto "
@@ -78,15 +102,34 @@ export CXXFLAGS="$CXXFLAGS -fno-lto "
 export MAKEFLAGS=%{?_smp_mflags}
 python3 setup.py build  --with-openssl
 
+pushd ../buildavx2/
+export CFLAGS="$CFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export CXXFLAGS="$CXXFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export FFLAGS="$FFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export FCFLAGS="$FCFLAGS -m64 -march=x86-64-v3 "
+export LDFLAGS="$LDFLAGS -m64 -march=x86-64-v3 "
+python3 setup.py build  --with-openssl
+
+popd
 %install
 export MAKEFLAGS=%{?_smp_mflags}
 rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/package-licenses/pypi-pycurl
 cp %{_builddir}/pycurl-7.45.1/COPYING-LGPL %{buildroot}/usr/share/package-licenses/pypi-pycurl/01a6b4bf79aca9b556822601186afab86e8c4fbf
+cp %{_builddir}/pycurl-7.45.1/COPYING-MIT %{buildroot}/usr/share/package-licenses/pypi-pycurl/dc04ce10edbb511f5111a0c65eb5a3e23c8fe681
 python3 -tt setup.py build  install --root=%{buildroot}
 echo ----[ mark ]----
 cat %{buildroot}/usr/lib/python3*/site-packages/*/requires.txt || :
 echo ----[ mark ]----
+pushd ../buildavx2/
+export CFLAGS="$CFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export CXXFLAGS="$CXXFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export FFLAGS="$FFLAGS -m64 -march=x86-64-v3 -Wl,-z,x86-64-v3 "
+export FCFLAGS="$FCFLAGS -m64 -march=x86-64-v3 "
+export LDFLAGS="$LDFLAGS -m64 -march=x86-64-v3 "
+python3 -tt setup.py build install --root=%{buildroot}-v3
+popd
+/usr/bin/elf-move.py avx2 %{buildroot}-v3 %{buildroot} %{buildroot}/usr/share/clear/filemap/filemap-%{name}
 
 %files
 %defattr(-,root,root,-)
@@ -127,9 +170,18 @@ echo ----[ mark ]----
 /usr/share/doc/pycurl/examples/ssh_keyfunction.py
 /usr/share/doc/pycurl/examples/xmlrpc_curl.py
 
+%files filemap
+%defattr(-,root,root,-)
+/usr/share/clear/filemap/filemap-pypi-pycurl
+
+%files lib
+%defattr(-,root,root,-)
+/usr/share/clear/optimized-elf/other*
+
 %files license
 %defattr(0644,root,root,0755)
 /usr/share/package-licenses/pypi-pycurl/01a6b4bf79aca9b556822601186afab86e8c4fbf
+/usr/share/package-licenses/pypi-pycurl/dc04ce10edbb511f5111a0c65eb5a3e23c8fe681
 
 %files python
 %defattr(-,root,root,-)

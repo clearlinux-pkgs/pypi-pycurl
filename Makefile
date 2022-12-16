@@ -1,5 +1,5 @@
 PKG_NAME := pypi-pycurl
-URL = https://files.pythonhosted.org/packages/09/ca/0b6da1d0f391acb8991ac6fdf8823ed9cf4c19680d4f378ab1727f90bd5c/pycurl-7.45.1.tar.gz
+URL = https://files.pythonhosted.org/packages/a8/af/24d3acfa76b867dbd8f1166853c18eefc890fc5da03a48672b38ea77ddae/pycurl-7.45.2.tar.gz
 ARCHIVES = 
 
 include ../common/Makefile.common
